@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>Daniel Scientific Calculator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Sora:wght@400;500;600;700;800&display=swap');
+
+  :root{
+    --bg: #14171c;
+    --panel: #1b1f26;
+    --panel-2: #21262f;
+    --ink: #e9ecf1;
+    --ink-dim: #8b93a3;
+    --line: #2b3140;
+    --amber: #f2a541;
+    --amber-dim: #7a5a2c;
+    --teal: #4fd1c5;
+    --red: #e8635a;
+    --display-bg: #0d0f13;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--ink); font-family:'Sora',sans-serif; height:100%;}
+  ::selection{background:var(--amber); color:#14171c;}
+
+  #app{
+    max-width:480px;
+    margin:0 auto;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    background:var(--panel);
+    border-left:1px solid var(--line);
+    border-right:1px solid var(--line);
+  }
+
+  header{
+    padding:18px 20px 14px;
+    border-bottom:1px solid var(--line);
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+  }
+  header .wordmark{
+    font-family:'Space Mono', monospace;
+    font-weight:700;
+    font-size:15px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--ink);
+  }
+  header .wordmark span{color:var(--amber);}
+  header .tagline{
+    font-family:'Space Mono', monospace;
+    font-size:10px;
+    color:var(--ink-dim);
+    letter-spacing:0.05em;
+  }
+
+  /* Mode tabs */
+  nav.modes{
+    display:flex;
+    overflow-x:auto;
+    scrollbar-width:none;
+    border-bottom:1px solid var(--line);
+    background:var(--panel-2);
+  }
+  nav.modes::-webkit-scrollbar{display:none;}
+  nav.modes button{
+    flex:0 0 auto;
+    background:none;
+    border:none;
+    color:var(--ink-dim);
+    font-family:'Space Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    padding:12px 16px;
+    cursor:pointer;
+    border-bottom:2px solid transparent;
+    white-space:nowrap;
+  }
+  nav.modes button.active{
+    color:var(--amber);
+    border-bottom:2px solid var(--amber);
+  }
+
+  main{flex:1; display:flex; flex-direction:column; padding:16px 16px 28px;}
+  .view{display:none;}
+  .view.active{display:flex; flex-direction:column; gap:14px;}
+
+  /* Display */
+  .display{
+    background:var(--display-bg);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:18px 16px;
+    text-align:right;
+    min-height:92px;
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-end;
+    gap:4px;
+  }
+  .display .history{
+    font-family:'Space Mono', monospace;
+    font-size:13px;
+    color:var(--ink-dim);
+    min-height:16px;
+    word-break:break-all;
+  }
+  .display .current{
+    font-family:'Space Mono', monospace;
+    font-size:32px;
+    font-weight:700;
+    color:var(--ink);
+    word-break:break-all;
+    line-height:1.15;
+  }
+  .display .mode-flag{
+    position:absolute;
+  }
+  .display-wrap{position:relative;}
+  .flag{
+    position:absolute;
+    top:-9px;
+    left:12px;
+    background:var(--amber);
+    color:#1a1a1a;
+    font-family:'Space Mono',monospace;
+    font-size:9px;
+    font-weight:700;
+    letter-spacing:0.1em;
+    padding:2px 7px;
+    border-radius:4px;
+  }
+
+  /* Keypad grid */
+  .grid{
+    display:grid;
+    gap:8px;
+  }
+  .grid.g5{grid-template-columns:repeat(5,1fr);}
+  .grid.g4{grid-template-columns:repeat(4,1fr);}
+
+  button.key{
+    font-family:'Space Mono', monospace;
+    font-size:15px;
+    font-weight:400;
+    border:1px solid var(--line);
+    background:var(--panel-2);
+    color:var(--ink);
+    border-radius:8px;
+    padding:14px 4px;
+    cursor:pointer;
+    transition:background .08s, transform .05s;
+    user-select:none;
+  }
+  button.key:active{transform:scale(0.95); background:#2a3040;}
+  button.key.op{color:var(--amber); border-color:var(--amber-dim);}
+  button.key.fn{color:var(--teal); font-size:12.5px;}
+  button.key.eq{background:var(--amber); color:#1a1a1a; font-weight:700; border-color:var(--amber);}
+  button.key.eq:active{background:#d68d2e;}
+  button.key.clear{color:var(--red);}
+  button.key.wide{grid-column:span 2;}
+
+  select, input[type=number], input[type=text]{
+    font-family:'Space Mono', monospace;
+    background:var(--display-bg);
+    border:1px solid var(--line);
+    color:var(--ink);
+    border-radius:8px;
+    padding:10px;
+    font-size:14px;
+  }
+  label.small{
+    font-family:'Space Mono', monospace;
+    font-size:10px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+    margin-bottom:4px;
+    display:block;
+  }
+
+  .section-title{
+    font-family:'Space Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+    border-bottom:1px solid var(--line);
+    padding-bottom:6px;
+    margin-top:4px;
+  }
+
+  /* Matrix */
+  .matrix-controls{display:flex; gap:10px; align-items:flex-end;}
+  .matrix-pair{display:flex; gap:14px; flex-wrap:wrap;}
+  .matrix-block{flex:1; min-width:140px;}
+  .matrix-grid{display:grid; gap:6px; margin-top:6px;}
+  .matrix-grid input{
+    width:100%;
+    text-align:center;
+    padding:8px 2px;
+    font-size:13px;
+  }
+  .matrix-result{
+    background:var(--display-bg);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:12px;
+    font-family:'Space Mono', monospace;
+    font-size:13px;
+    white-space:pre;
+    overflow-x:auto;
+    color:var(--teal);
+    min-height:44px;
+  }
+  .matrix-ops{display:flex; flex-wrap:wrap; gap:8px;}
+  .matrix-ops button{
+    flex:1 1 auto;
+    min-width:70px;
+  }
+
+  /* Stats */
+  textarea#stats-input{
+    width:100%;
+    min-height:70px;
+    font-family:'Space Mono', monospace;
+    background:var(--display-bg);
+    border:1px solid var(--line);
+    color:var(--ink);
+    border-radius:8px;
+    padding:10px;
+    font-size:14px;
+    resize:vertical;
+  }
+  .stats-results{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+  }
+  .stat-card{
+    background:var(--display-bg);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:10px 12px;
+  }
+  .stat-card .label{
+    font-family:'Space Mono', monospace;
+    font-size:9px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+  }
+  .stat-card .val{
+    font-family:'Space Mono', monospace;
+    font-size:16px;
+    color:var(--teal);
+    margin-top:2px;
+    word-break:break-all;
+  }
+
+  /* Combinatorics */
+  .combo-row{display:flex; gap:10px; align-items:flex-end;}
+  .combo-row .field{flex:1;}
+  .combo-result{
+    background:var(--display-bg);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:14px;
+    font-family:'Space Mono', monospace;
+    font-size:22px;
+    color:var(--teal);
+    text-align:center;
+  }
+
+  .angle-toggle{
+    display:flex;
+    gap:6px;
+    justify-content:flex-end;
+  }
+  .angle-toggle button{
+    font-family:'Space Mono', monospace;
+    font-size:10px;
+    letter-spacing:0.05em;
+    padding:5px 10px;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--ink-dim);
+    border-radius:6px;
+    cursor:pointer;
+  }
+  .angle-toggle button.active{color:var(--amber); border-color:var(--amber-dim);}
+
+  footer{
+    text-align:center;
+    padding:10px;
+    font-family:'Space Mono', monospace;
+    font-size:9px;
+    color:#4a5164;
+    letter-spacing:0.08em;
+  }
+
+  @media (max-width:360px){
+    button.key{font-size:13px; padding:12px 2px;}
+    .display .current{font-size:26px;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <div>
+      <div class="wordmark">DANIEL<span>CALCULATOR</span></div>
+      <div class="tagline">scientific · matrix · stats</div>
+    </div>
+  </header>
+
+  <nav class="modes">
+    <button class="mode-btn active" data-view="basic">Basic</button>
+    <button class="mode-btn" data-view="sci">Scientific</button>
+    <button class="mode-btn" data-view="matrix">Matrix</button>
+    <button class="mode-btn" data-view="combo">nPr / nCr</button>
+    <button class="mode-btn" data-view="stats">Statistics</button>
+  </nav>
+
+  <main>
+
+    <!-- BASIC -->
+    <section class="view active" id="view-basic">
+      <div class="display-wrap">
+        <div class="display">
+          <div class="history" id="basic-history">&nbsp;</div>
+          <div class="current" id="basic-current">0</div>
+        </div>
+      </div>
+      <div class="grid g4">
+        <button class="key clear" data-act="clear">AC</button>
+        <button class="key clear" data-act="back">⌫</button>
+        <button class="key op" data-act="percent">%</button>
+        <button class="key op" data-val="/">÷</button>
+
+        <button class="key" data-val="7">7</button>
+        <button class="key" data-val="8">8</button>
+        <button class="key" data-val="9">9</button>
+        <button class="key op" data-val="*">×</button>
+
+        <button class="key" data-val="4">4</button>
+        <button class="key" data-val="5">5</button>
+        <button class="key" data-val="6">6</button>
+        <button class="key op" data-val="-">−</button>
+
+        <button class="key" data-val="1">1</button>
+        <button class="key" data-val="2">2</button>
+        <button class="key" data-val="3">3</button>
+        <button class="key op" data-val="+">+</button>
+
+        <button class="key" data-act="sign">±</button>
+        <button class="key" data-val="0">0</button>
+        <button class="key" data-val=".">.</button>
+        <button class="key eq" data-act="equals">=</button>
+      </div>
+    </section>
+
+    <!-- SCIENTIFIC -->
+    <section class="view" id="view-sci">
+      <div class="angle-toggle">
+        <button class="ang-btn active" data-ang="deg">DEG</button>
+        <button class="ang-btn" data-ang="rad">RAD</button>
+      </div>
+      <div class="display-wrap">
+        <div class="display">
+          <div class="history" id="sci-history">&nbsp;</div>
+          <div class="current" id="sci-current">0</div>
+        </div>
+      </div>
+      <div class="grid g5">
+        <button class="key fn" data-fn="sin">sin</button>
+        <button class="key fn" data-fn="cos">cos</button>
+        <button class="key fn" data-fn="tan">tan</button>
+        <button class="key fn" data-fn="ln">ln</button>
+        <button class="key fn" data-fn="log10">log</button>
+
+        <button class="key fn" data-fn="sinh">sinh</button>
+        <button class="key fn" data-fn="cosh">cosh</button>
+        <button class="key fn" data-fn="tanh">tanh</button>
+        <button class="key fn" data-fn="sqrt">√</button>
+        <button class="key fn" data-fn="cbrt">∛</button>
+
+        <button class="key fn" data-fn="asin">asin</button>
+        <button class="key fn" data-fn="acos">acos</button>
+        <button class="key fn" data-fn="atan">atan</button>
+        <button class="key fn" data-fn="sq">x²</button>
+        <button class="key fn" data-fn="cube">x³</button>
+
+        <button class="key fn" data-fn="fact">n!</button>
+        <button class="key fn" data-fn="inv">1/x</button>
+        <button class="key fn" data-fn="pi">π</button>
+        <button class="key fn" data-fn="e">e</button>
+        <button class="key op" data-val="^">^</button>
+
+        <button class="key clear" data-act="clear2">AC</button>
+        <button class="key clear" data-act="back2">⌫</button>
+        <button class="key" data-val2="(">(</button>
+        <button class="key" data-val2=")">)</button>
+        <button class="key op" data-val2="/">÷</button>
+
+        <button class="key" data-val2="7">7</button>
+        <button class="key" data-val2="8">8</button>
+        <button class="key" data-val2="9">9</button>
+        <button class="key op" data-val2="*">×</button>
+        <button class="key eq" data-act="equals2" style="grid-row:span 2;">=</button>
+
+        <button class="key" data-val2="4">4</button>
+        <button class="key" data-val2="5">5</button>
+        <button class="key" data-val2="6">6</button>
+        <button class="key op" data-val2="-">−</button>
+
+        <button class="key" data-val2="1">1</button>
+        <button class="key" data-val2="2">2</button>
+        <button class="key" data-val2="3">3</button>
+        <button class="key op" data-val2="+">+</button>
+
+        <button class="key wide" data-val2="0">0</button>
+        <button class="key" data-val2=".">.</button>
+        <button class="key" data-act="pctsci">%</button>
+      </div>
+    </section>
+
+    <!-- MATRIX -->
+    <section class="view" id="view-matrix">
+      <div class="section-title">Matrix operations · 2×2 to 4×4</div>
+      <div class="matrix-controls">
+        <div class="field">
+          <label class="small">Size</label>
+          <select id="mat-size">
+            <option value="2">2 × 2</option>
+            <option value="3">3 × 3</option>
+            <option value="4">4 × 4</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="small">Operation</label>
+          <select id="mat-op">
+            <option value="add">A + B</option>
+            <option value="sub">A − B</option>
+            <option value="mul">A × B</option>
+            <option value="detA">det(A)</option>
+            <option value="detB">det(B)</option>
+            <option value="invA">A⁻¹</option>
+            <option value="invB">B⁻¹</option>
+            <option value="transA">Aᵀ</option>
+            <option value="transB">Bᵀ</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="matrix-pair">
+        <div class="matrix-block">
+          <label class="small">Matrix A</label>
+          <div class="matrix-grid" id="mat-a"></div>
+        </div>
+        <div class="matrix-block" id="mat-b-block">
+          <label class="small">Matrix B</label>
+          <div class="matrix-grid" id="mat-b"></div>
+        </div>
+      </div>
+
+      <button class="key eq" id="mat-compute" style="padding:12px;">Compute</button>
+      <div class="section-title">Result</div>
+      <div class="matrix-result" id="mat-result">—</div>
+    </section>
+
+    <!-- COMBINATORICS -->
+    <section class="view" id="view-combo">
+      <div class="section-title">Permutations & Combinations</div>
+      <div class="combo-row">
+        <div class="field">
+          <label class="small">n (total items)</label>
+          <input type="number" id="combo-n" min="0" value="5">
+        </div>
+        <div class="field">
+          <label class="small">r (chosen)</label>
+          <input type="number" id="combo-r" min="0" value="2">
+        </div>
+      </div>
+      <div class="matrix-ops">
+        <button class="key op" id="btn-npr">nPr</button>
+        <button class="key op" id="btn-ncr">nCr</button>
+        <button class="key op" id="btn-nfact">n!</button>
+      </div>
+      <div class="section-title">Result</div>
+      <div class="combo-result" id="combo-result">—</div>
+    </section>
+
+    <!-- STATISTICS -->
+    <section class="view" id="view-stats">
+      <div class="section-title">Statistical computations</div>
+      <label class="small">Data set (comma or space separated)</label>
+      <textarea id="stats-input" placeholder="e.g. 4, 8, 15, 16, 23, 42"></textarea>
+      <button class="key eq" id="stats-compute" style="padding:12px;">Calculate</button>
+      <div class="stats-results" id="stats-results"></div>
+    </section>
+
+  </main>
+
+  <footer>Daniel Calculator App</footer>
+</div>
+
+<script>
+/* ============ MODE SWITCHING ============ */
+const modeBtns = document.querySelectorAll('.mode-btn');
+const views = document.querySelectorAll('.view');
+modeBtns.forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    modeBtns.forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    views.forEach(v=>v.classList.remove('active'));
+    document.getElementById('view-'+btn.dataset.view).classList.add('active');
+  });
+});
+
+/* ============ BASIC CALCULATOR ============ */
+(function(){
+  const historyEl = document.getElementById('basic-history');
+  const currentEl = document.getElementById('basic-current');
+  let expr = '';
+
+  function render(){
+    currentEl.textContent = expr === '' ? '0' : prettify(expr);
+  }
+  function prettify(s){
+    return s.replace(/\*/g,'×').replace(/\//g,'÷').replace(/-/g,'−');
+  }
+
+  document.querySelectorAll('#view-basic [data-val]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const v = btn.dataset.val;
+      if('+-*/'.includes(v)){
+        if(expr === '' && v !== '-') return;
+        const last = expr.slice(-1);
+        if('+-*/'.includes(last)) expr = expr.slice(0,-1)+v;
+        else expr += v;
+      } else {
+        expr += v;
+      }
+      render();
+    });
+  });
+
+  document.querySelectorAll('#view-basic [data-act]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const act = btn.dataset.act;
+      if(act==='clear'){ expr=''; historyEl.textContent='\u00a0'; render(); }
+      else if(act==='back'){ expr = expr.slice(0,-1); render(); }
+      else if(act==='sign'){
+        // toggle sign of last number in expr
+        const m = expr.match(/(-?\d*\.?\d+)$/);
+        if(m){
+          const num = m[1];
+          const toggled = num.startsWith('-') ? num.slice(1) : '-'+num;
+          expr = expr.slice(0, m.index) + toggled;
+        }
+        render();
+      }
+      else if(act==='percent'){
+        const m = expr.match(/(-?\d*\.?\d+)$/);
+        if(m){
+          const num = parseFloat(m[1])/100;
+          expr = expr.slice(0, m.index) + num;
+        }
+        render();
+      }
+      else if(act==='equals'){
+        try{
+          const safe = expr.replace(/[^-+*/.\d()]/g,'');
+          if(!safe) return;
+          const result = Function('"use strict"; return ('+safe+')')();
+          historyEl.textContent = prettify(expr) + ' =';
+          expr = formatNum(result);
+          render();
+        }catch(e){
+          currentEl.textContent = 'Error';
+          expr='';
+        }
+      }
+    });
+  });
+
+  window.formatNum = function(n){
+    if(typeof n !== 'number' || !isFinite(n)) return 'Error';
+    if(Number.isInteger(n)) return n.toString();
+    return parseFloat(n.toFixed(10)).toString();
+  };
+
+  render();
+})();
+
+/* ============ SCIENTIFIC CALCULATOR ============ */
+(function(){
+  const historyEl = document.getElementById('sci-history');
+  const currentEl = document.getElementById('sci-current');
+  let expr = '';
+  let angMode = 'deg';
+
+  document.querySelectorAll('.ang-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.ang-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      angMode = btn.dataset.ang;
+    });
+  });
+
+  function render(){
+    currentEl.textContent = expr === '' ? '0' : expr.replace(/\*/g,'×').replace(/\//g,'÷');
+  }
+
+  document.querySelectorAll('#view-sci [data-val2]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      expr += btn.dataset.val2;
+      render();
+    });
+  });
+
+  function toRad(x){ return angMode==='deg' ? x*Math.PI/180 : x; }
+  function fromRad(x){ return angMode==='deg' ? x*180/Math.PI : x; }
+  function factorial(n){
+    if(n<0 || !Number.isInteger(n)) return NaN;
+    if(n>170) return Infinity;
+    let r=1; for(let i=2;i<=n;i++) r*=i; return r;
+  }
+
+  const fnMap = {
+    sin: x=>Math.sin(toRad(x)),
+    cos: x=>Math.cos(toRad(x)),
+    tan: x=>Math.tan(toRad(x)),
+    asin: x=>fromRad(Math.asin(x)),
+    acos: x=>fromRad(Math.acos(x)),
+    atan: x=>fromRad(Math.atan(x)),
+    sinh: x=>Math.sinh(x),
+    cosh: x=>Math.cosh(x),
+    tanh: x=>Math.tanh(x),
+    ln: x=>Math.log(x),
+    log10: x=>Math.log10(x),
+    sqrt: x=>Math.sqrt(x),
+    cbrt: x=>Math.cbrt(x),
+    sq: x=>x*x,
+    cube: x=>x*x*x,
+    fact: x=>factorial(x),
+    inv: x=>1/x,
+  };
+
+  document.querySelectorAll('#view-sci [data-fn]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const fn = btn.dataset.fn;
+      if(fn==='pi'){ expr += 'Math.PI'; render(); return; }
+      if(fn==='e'){ expr += 'Math.E'; render(); return; }
+      // wrap trailing number, or apply to whole current expr as fallback
+      const m = expr.match(/(-?\d*\.?\d+)$/);
+      if(m){
+        const num = parseFloat(m[1]);
+        const result = fnMap[fn](num);
+        expr = expr.slice(0, m.index) + formatNum(result);
+      } else if(expr===''){
+        return;
+      } else {
+        // apply to full parenthetical expr
+        try{
+          const val = evalExpr(expr);
+          expr = formatNum(fnMap[fn](val));
+        }catch(e){}
+      }
+      render();
+    });
+  });
+
+  function evalExpr(e){
+    let safe = e.replace(/Math\.PI/g,'π').replace(/Math\.E/g,'ε');
+    safe = safe.replace(/\^/g,'**');
+    safe = safe.replace(/π/g,'Math.PI').replace(/ε/g,'Math.E');
+    // eslint-disable-next-line no-new-func
+    return Function('"use strict"; return ('+safe+')')();
+  }
+
+  document.getElementById('view-sci').addEventListener('click', (e)=>{
+    const btn = e.target.closest('[data-act]');
+    if(!btn) return;
+    const act = btn.dataset.act;
+    if(act==='clear2'){ expr=''; historyEl.textContent='\u00a0'; render(); }
+    else if(act==='back2'){ expr = expr.slice(0,-1); render(); }
+    else if(act==='pctsci'){
+      const m = expr.match(/(-?\d*\.?\d+)$/);
+      if(m){ expr = expr.slice(0,m.index) + (parseFloat(m[1])/100); }
+      render();
+    }
+    else if(act==='equals2'){
+      try{
+        const val = evalExpr(expr.replace(/\^/g,'**'));
+        historyEl.textContent = expr.replace(/\*/g,'×').replace(/\//g,'÷') + ' =';
+        expr = formatNum(val);
+        render();
+      }catch(err){
+        currentEl.textContent = 'Error';
+        expr = '';
+      }
+    }
+  });
+
+  render();
+})();
+
+/* ============ MATRIX ============ */
+(function(){
+  const sizeSel = document.getElementById('mat-size');
+  const opSel = document.getElementById('mat-op');
+  const gridA = document.getElementById('mat-a');
+  const gridB = document.getElementById('mat-b');
+  const bBlock = document.getElementById('mat-b-block');
+  const resultEl = document.getElementById('mat-result');
+
+  function buildGrid(container, n, prefix){
+    container.innerHTML='';
+    container.style.gridTemplateColumns = `repeat(${n}, 1fr)`;
+    for(let i=0;i<n*n;i++){
+      const inp = document.createElement('input');
+      inp.type='number';
+      inp.value = (i % (n+1) === 0) ? '1' : '0'; // identity-ish default
+      inp.id = `${prefix}-${i}`;
+      container.appendChild(inp);
+    }
+  }
+
+  function readMatrix(prefix, n){
+    const m=[];
+    for(let r=0;r<n;r++){
+      const row=[];
+      for(let c=0;c<n;c++){
+        const v = parseFloat(document.getElementById(`${prefix}-${r*n+c}`).value);
+        row.push(isNaN(v)?0:v);
+      }
+      m.push(row);
+    }
+    return m;
+  }
+
+  function rebuild(){
+    const n = parseInt(sizeSel.value);
+    buildGrid(gridA, n, 'a');
+    buildGrid(gridB, n, 'b');
+    const op = opSel.value;
+    bBlock.style.display = (op==='add'||op==='sub'||op==='mul') ? 'block' : 'none';
+    resultEl.textContent = '—';
+  }
+  sizeSel.addEventListener('change', rebuild);
+  opSel.addEventListener('change', rebuild);
+  rebuild();
+
+  function fmt(x){
+    if(Math.abs(x) < 1e-9) x = 0;
+    return Number.isInteger(x) ? x.toString() : x.toFixed(4).replace(/0+$/,'').replace(/\.$/,'');
+  }
+  function matToString(m){
+    return m.map(row=>row.map(x=>fmt(x).padStart(8)).join(' ')).join('\n');
+  }
+  function add(a,b,n){ return a.map((row,r)=>row.map((v,c)=>v+b[r][c])); }
+  function sub(a,b,n){ return a.map((row,r)=>row.map((v,c)=>v-b[r][c])); }
+  function mul(a,b,n){
+    const res = Array.from({length:n},()=>Array(n).fill(0));
+    for(let i=0;i<n;i++) for(let j=0;j<n;j++) for(let k=0;k<n;k++) res[i][j]+=a[i][k]*b[k][j];
+    return res;
+  }
+  function transpose(a,n){
+    const res = Array.from({length:n},()=>Array(n).fill(0));
+    for(let i=0;i<n;i++) for(let j=0;j<n;j++) res[j][i]=a[i][j];
+    return res;
+  }
+  function det(a,n){
+    if(n===1) return a[0][0];
+    if(n===2) return a[0][0]*a[1][1]-a[0][1]*a[1][0];
+    let d=0;
+    for(let c=0;c<n;c++){
+      d += ((c%2===0)?1:-1) * a[0][c] * det(minor(a,0,c),n-1);
+    }
+    return d;
+  }
+  function minor(a,row,col){
+    return a.filter((_,r)=>r!==row).map(r=>r.filter((_,c)=>c!==col));
+  }
+  function inverse(a,n){
+    const d = det(a,n);
+    if(Math.abs(d) < 1e-12) return null;
+    const cof = Array.from({length:n},()=>Array(n).fill(0));
+    for(let i=0;i<n;i++){
+      for(let j=0;j<n;j++){
+        cof[i][j] = ((i+j)%2===0?1:-1) * det(minor(a,i,j), n-1);
+      }
+    }
+    const adj = transpose(cof,n);
+    return adj.map(row=>row.map(v=>v/d));
+  }
+
+  document.getElementById('mat-compute').addEventListener('click', ()=>{
+    const n = parseInt(sizeSel.value);
+    const A = readMatrix('a', n);
+    const B = readMatrix('b', n);
+    const op = opSel.value;
+    try{
+      let out;
+      if(op==='add') out = matToString(add(A,B,n));
+      else if(op==='sub') out = matToString(sub(A,B,n));
+      else if(op==='mul') out = matToString(mul(A,B,n));
+      else if(op==='transA') out = matToString(transpose(A,n));
+      else if(op==='transB') out = matToString(transpose(B,n));
+      else if(op==='detA') out = 'det(A) = ' + fmt(det(A,n));
+      else if(op==='detB') out = 'det(B) = ' + fmt(det(B,n));
+      else if(op==='invA'){
+        const inv = inverse(A,n);
+        out = inv ? matToString(inv) : 'Matrix A is singular — no inverse exists.';
+      }
+      else if(op==='invB'){
+        const inv = inverse(B,n);
+        out = inv ? matToString(inv) : 'Matrix B is singular — no inverse exists.';
+      }
+      resultEl.textContent = out;
+    }catch(e){
+      resultEl.textContent = 'Error computing result.';
+    }
+  });
+})();
+
+/* ============ PERMUTATIONS & COMBINATIONS ============ */
+(function(){
+  function factorial(n){
+    if(n<0 || !Number.isInteger(n)) return NaN;
+    let r=1; for(let i=2;i<=n;i++) r*=i; return r;
+  }
+  function nPr(n,r){
+    if(r>n || r<0) return NaN;
+    return factorial(n)/factorial(n-r);
+  }
+  function nCr(n,r){
+    if(r>n || r<0) return NaN;
+    return factorial(n)/(factorial(r)*factorial(n-r));
+  }
+  const resultEl = document.getElementById('combo-result');
+  function getVals(){
+    const n = parseInt(document.getElementById('combo-n').value);
+    const r = parseInt(document.getElementById('combo-r').value);
+    return {n,r};
+  }
+  document.getElementById('btn-npr').addEventListener('click', ()=>{
+    const {n,r} = getVals();
+    const res = nPr(n,r);
+    resultEl.textContent = `P(${n},${r}) = ${isNaN(res)?'undefined':res.toLocaleString()}`;
+  });
+  document.getElementById('btn-ncr').addEventListener('click', ()=>{
+    const {n,r} = getVals();
+    const res = nCr(n,r);
+    resultEl.textContent = `C(${n},${r}) = ${isNaN(res)?'undefined':res.toLocaleString()}`;
+  });
+  document.getElementById('btn-nfact').addEventListener('click', ()=>{
+    const {n} = getVals();
+    const res = factorial(n);
+    resultEl.textContent = `${n}! = ${isNaN(res)?'undefined':res.toLocaleString()}`;
+  });
+})();
+
+/* ============ STATISTICS ============ */
+(function(){
+  const input = document.getElementById('stats-input');
+  const resultsEl = document.getElementById('stats-results');
+
+  function parseData(str){
+    return str.split(/[\s,]+/).map(s=>s.trim()).filter(s=>s!=='').map(Number).filter(n=>!isNaN(n));
+  }
+  function mean(arr){ return arr.reduce((a,b)=>a+b,0)/arr.length; }
+  function median(arr){
+    const s = [...arr].sort((a,b)=>a-b);
+    const mid = Math.floor(s.length/2);
+    return s.length%2 ? s[mid] : (s[mid-1]+s[mid])/2;
+  }
+  function mode(arr){
+    const freq = {};
+    arr.forEach(n=>freq[n]=(freq[n]||0)+1);
+    let max=0, modes=[];
+    for(const k in freq){
+      if(freq[k]>max){ max=freq[k]; modes=[k]; }
+      else if(freq[k]===max) modes.push(k);
+    }
+    if(modes.length===Object.keys(freq).length) return 'none';
+    return modes.join(', ');
+  }
+  function variance(arr, m, sample){
+    const denom = sample ? arr.length-1 : arr.length;
+    if(denom<=0) return NaN;
+    return arr.reduce((a,b)=>a+(b-m)**2,0)/denom;
+  }
+  function fmt(n){
+    if(typeof n !== 'number' || isNaN(n)) return '—';
+    return Number.isInteger(n) ? n.toString() : n.toFixed(4);
+  }
+
+  document.getElementById('stats-compute').addEventListener('click', ()=>{
+    const data = parseData(input.value);
+    if(data.length===0){
+      resultsEl.innerHTML = '<div class="stat-card"><div class="label">Error</div><div class="val">No valid numbers found</div></div>';
+      return;
+    }
+    const n = data.length;
+    const m = mean(data);
+    const med = median(data);
+    const mo = mode(data);
+    const varPop = variance(data,m,false);
+    const varSamp = variance(data,m,true);
+    const sdPop = Math.sqrt(varPop);
+    const sdSamp = Math.sqrt(varSamp);
+    const sum = data.reduce((a,b)=>a+b,0);
+    const min = Math.min(...data);
+    const max = Math.max(...data);
+    const range = max-min;
+
+    const cards = [
+      ['Count (n)', n],
+      ['Sum', fmt(sum)],
+      ['Mean', fmt(m)],
+      ['Median', fmt(med)],
+      ['Mode', mo],
+      ['Range', fmt(range)],
+      ['Min', fmt(min)],
+      ['Max', fmt(max)],
+      ['Variance (pop.)', fmt(varPop)],
+      ['Std Dev (pop.)', fmt(sdPop)],
+      ['Variance (sample)', fmt(varSamp)],
+      ['Std Dev (sample)', fmt(sdSamp)],
+    ];
+    resultsEl.innerHTML = cards.map(([label,val])=>
+      `<div class="stat-card"><div class="label">${label}</div><div class="val">${val}</div></div>`
+    ).join('');
+  });
+})();
+</script>
+</body>
+</html>
